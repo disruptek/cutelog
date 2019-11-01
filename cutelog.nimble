@@ -1,5 +1,5 @@
 version = "1.0.0"
 author = "disruptek"
-description = ""
+description = "cute logging"
 license = "MIT"
 requires "nim >= 0.20.0"
