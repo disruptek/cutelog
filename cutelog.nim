@@ -27,7 +27,7 @@ method log*(logger: CuteLogger; level: Level; args: varargs[string, `$`])
   of lvlInfo:
     prefix = "✔️"
   of lvlDebug:
-    prefix = "🐛"
+    prefix = "🐞"
   of lvlAll, lvlNone:  # fwiw, this method is never called with these
     discard
   try:
