@@ -30,6 +30,8 @@ method log*(logger: CuteLogger; level: Level; args: varargs[string, `$`])
     prefix = "🐞"
   of lvlAll, lvlNone:  # fwiw, this method is never called with these
     discard
+  when not defined(cutelogEmojis):
+    prefix = ""
   try:
     # separate logging arguments with spaces for convenience
     logger.forward.log(level, prefix & arguments.join(" "))
