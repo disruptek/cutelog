@@ -97,6 +97,8 @@ method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
       stdmsg.setStyle(palette.style)
     # separate logging arguments with spaces for convenience
     stdmsg.writeLine(prefix & arguments.join(" "))
+    if stdmsg.isatty:
+      stdmsg.resetAttributes
   except:
     discard
 
