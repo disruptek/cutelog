@@ -1,8 +1,11 @@
-# cutelog
+# cutelog [![Build Status](https://travis-ci.org/disruptek/cutelog.svg?branch=master)](https://travis-ci.org/disruptek/cutelog)
 
 A stylish little logger to replace `echo` in command-line apps.
 
-## Defines
+## Usage
+
+- _`useStderr` does not have any effect on nim-0.19.6_
+- _color, style, and prefix are unsupported on nim-0.20.X_
 
 ```
 --define:cutelogEmojis       # turn on emojis

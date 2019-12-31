@@ -7,9 +7,6 @@ export logging
 type
   CuteLogger* = ref object of Logger
     forward: Logger
-  CuteConsoleLogger* = ref object of ConsoleLogger
-    prefixer: CuteLoggerPrefixer
-    painter: CuteLoggerPainter
   CuteLoggerPrefixer* = proc (level: Level): string {.raises: [], noSideEffect.}
   CuteLoggerPainter* = proc (level: Level): CutePalette {.raises: [], noSideEffect.}
   CutePalette* = tuple
@@ -17,7 +14,19 @@ type
     fg: ForegroundColor
     bg: BackgroundColor
 
-proc emojiPrefix(level: Level): string {.used, raises: [].} =
+when NimMajor == 0 and NimMinor < 20:
+  type
+    CuteConsoleLogger* = ref object of ConsoleLogger
+      prefixer: CuteLoggerPrefixer
+      painter: CuteLoggerPainter
+      useStderr: bool
+else:
+  type
+    CuteConsoleLogger* = ref object of ConsoleLogger
+      prefixer: CuteLoggerPrefixer
+      painter: CuteLoggerPainter
+
+func emojiPrefix(level: Level): string {.used.} =
   case level:
   of lvlFatal:   # use this level for our most critical outputs
     result = ""  # and don't prefix them with a glyph
@@ -78,29 +87,45 @@ proc painter*(level: Level): CutePalette =
   when defined(cutelogBland):
     result.style = {}
 
-method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
-  {.locks: "unknown", raises: [].} =
-  ## use color and a prefix func to log
-  let
-    prefix = logger.prefixer(level)
-    palette = logger.painter(level)
+when NimMajor != 0 or NimMinor != 20:
+  method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
+    {.locks: "unknown", raises: [].} =
+    ## use color and a prefix func to log
+    let
+      prefix = logger.prefixer(level)
+      palette = logger.painter(level)
 
-  var
-    arguments: seq[string]
-  for a in args:
-    arguments.add a
-  try:
-    if stdmsg.isatty:
-      stdmsg.resetAttributes
-      stdmsg.setForegroundColor(palette.fg, bright = styleBright in palette.style)
-      stdmsg.setBackgroundColor(palette.bg, bright = false)
-      stdmsg.setStyle(palette.style)
-    # separate logging arguments with spaces for convenience
-    stdmsg.writeLine(prefix & arguments.join(" "))
-    if stdmsg.isatty:
-      stdmsg.resetAttributes
-  except:
-    discard
+    var
+      arguments: seq[string]
+    for a in args:
+      arguments.add a
+    try:
+      if stdmsg.isatty:
+        stdmsg.resetAttributes
+        stdmsg.setForegroundColor(palette.fg,
+                                  bright = styleBright in palette.style)
+        stdmsg.setBackgroundColor(palette.bg,
+                                  bright = false)
+        stdmsg.setStyle(palette.style)
+      # separate logging arguments with spaces for convenience
+      stdmsg.writeLine(prefix & arguments.join(" "))
+      if stdmsg.isatty:
+        stdmsg.resetAttributes
+    except:
+      discard
+else:
+  method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
+    {.locks: "unknown", raises: [].} =
+    ## use a prefix func to log
+    var
+      arguments: seq[string]
+    for a in args:
+      arguments.add a
+    try:
+      # separate logging arguments with spaces for convenience
+      stdmsg.writeLine(arguments.join(" "))
+    except:
+      discard
 
 proc newCuteLogger*(console: ConsoleLogger): CuteLogger =
   ## create a new logger instance which forwards to the given console logger
@@ -121,7 +146,7 @@ proc newCuteConsoleLogger*(levelThreshold = lvlAll; fmtStr = "";
   when defined(cutelogEmojis):
     prefixer = emojiPrefix
   else:
-    prefixer = proc (level: Level): string = ""
+    prefixer = func (level: Level): string = ""
   result = newCuteConsoleLogger(levelThreshold = levelThreshold, fmtStr = fmtStr,
                                 prefixer = prefixer, painter = painter,
                                 useStderr = useStderr)
