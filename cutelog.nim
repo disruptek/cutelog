@@ -7,15 +7,24 @@ export logging
 type
   CuteLogger* = ref object of Logger
     forward: Logger
-  CuteConsoleLogger* = ref object of ConsoleLogger
-    prefixer: CuteLoggerPrefixer
-    painter: CuteLoggerPainter
   CuteLoggerPrefixer* = proc (level: Level): string {.raises: [], noSideEffect.}
   CuteLoggerPainter* = proc (level: Level): CutePalette {.raises: [], noSideEffect.}
   CutePalette* = tuple
     style: set[Style]
     fg: ForegroundColor
     bg: BackgroundColor
+
+when NimMajor == 0 and NimMinor < 20:
+  type
+    CuteConsoleLogger* = ref object of ConsoleLogger
+      prefixer: CuteLoggerPrefixer
+      painter: CuteLoggerPainter
+      useStderr: bool
+else:
+  type
+    CuteConsoleLogger* = ref object of ConsoleLogger
+      prefixer: CuteLoggerPrefixer
+      painter: CuteLoggerPainter
 
 func emojiPrefix(level: Level): string {.used.} =
   case level:
@@ -91,14 +100,16 @@ method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
     arguments.add a
   try:
     if stdmsg.isatty:
-      stdmsg.resetAttributes
+      when NimMajor != 0 or NimMinor != 20:
+        stdmsg.resetAttributes
       stdmsg.setForegroundColor(palette.fg, bright = styleBright in palette.style)
       stdmsg.setBackgroundColor(palette.bg, bright = false)
       stdmsg.setStyle(palette.style)
     # separate logging arguments with spaces for convenience
     stdmsg.writeLine(prefix & arguments.join(" "))
     if stdmsg.isatty:
-      stdmsg.resetAttributes
+      when NimMajor != 0 or NimMinor != 20:
+        stdmsg.resetAttributes
   except:
     discard
 
