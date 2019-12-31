@@ -87,19 +87,19 @@ proc painter*(level: Level): CutePalette =
   when defined(cutelogBland):
     result.style = {}
 
-method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
-  {.locks: "unknown", raises: [].} =
-  ## use color and a prefix func to log
-  let
-    prefix = logger.prefixer(level)
-    palette = logger.painter(level)
+when NimMajor != 0 or NimMinor != 20:
+  method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
+    {.locks: "unknown", raises: [].} =
+    ## use color and a prefix func to log
+    let
+      prefix = logger.prefixer(level)
+      palette = logger.painter(level)
 
-  var
-    arguments: seq[string]
-  for a in args:
-    arguments.add a
-  try:
-    when NimMajor != 0 or NimMinor != 20:
+    var
+      arguments: seq[string]
+    for a in args:
+      arguments.add a
+    try:
       if stdmsg.isatty:
         stdmsg.resetAttributes
         stdmsg.setForegroundColor(palette.fg,
@@ -107,13 +107,29 @@ method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
         stdmsg.setBackgroundColor(palette.bg,
                                   bright = false)
         stdmsg.setStyle(palette.style)
-    # separate logging arguments with spaces for convenience
-    stdmsg.writeLine(prefix & arguments.join(" "))
-    when NimMajor != 0 or NimMinor != 20:
+      # separate logging arguments with spaces for convenience
+      stdmsg.writeLine(prefix & arguments.join(" "))
       if stdmsg.isatty:
         stdmsg.resetAttributes
-  except:
-    discard
+    except:
+      discard
+else:
+  method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
+    {.locks: "unknown", raises: [].} =
+    ## use a prefix func to log
+    let
+      prefix = logger.prefixer(level)
+
+    var
+      arguments: seq[string]
+    for a in args:
+      arguments.add a
+    try:
+      # separate logging arguments with spaces for convenience
+      stdmsg.writeLine(prefix & arguments.join(" "))
+    except:
+      discard
+
 
 proc newCuteLogger*(console: ConsoleLogger): CuteLogger =
   ## create a new logger instance which forwards to the given console logger
