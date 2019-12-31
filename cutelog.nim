@@ -99,16 +99,18 @@ method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
   for a in args:
     arguments.add a
   try:
-    if stdmsg.isatty:
-      when NimMajor != 0 or NimMinor != 20:
+    when NimMajor != 0 or NimMinor != 20:
+      if stdmsg.isatty:
         stdmsg.resetAttributes
-      stdmsg.setForegroundColor(palette.fg, bright = styleBright in palette.style)
-      stdmsg.setBackgroundColor(palette.bg, bright = false)
-      stdmsg.setStyle(palette.style)
+        stdmsg.setForegroundColor(palette.fg,
+                                  bright = styleBright in palette.style)
+        stdmsg.setBackgroundColor(palette.bg,
+                                  bright = false)
+        stdmsg.setStyle(palette.style)
     # separate logging arguments with spaces for convenience
     stdmsg.writeLine(prefix & arguments.join(" "))
-    if stdmsg.isatty:
-      when NimMajor != 0 or NimMinor != 20:
+    when NimMajor != 0 or NimMinor != 20:
+      if stdmsg.isatty:
         stdmsg.resetAttributes
   except:
     discard
