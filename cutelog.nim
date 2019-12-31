@@ -117,19 +117,15 @@ else:
   method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
     {.locks: "unknown", raises: [].} =
     ## use a prefix func to log
-    let
-      prefix = logger.prefixer(level)
-
     var
       arguments: seq[string]
     for a in args:
       arguments.add a
     try:
       # separate logging arguments with spaces for convenience
-      stdmsg.writeLine(prefix & arguments.join(" "))
+      stdmsg.writeLine(arguments.join(" "))
     except:
       discard
-
 
 proc newCuteLogger*(console: ConsoleLogger): CuteLogger =
   ## create a new logger instance which forwards to the given console logger

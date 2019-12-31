@@ -5,7 +5,7 @@ A stylish little logger to replace `echo` in command-line apps.
 ## Usage
 
 - _`useStderr` does not have any effect on nim-0.19.6_
-- _color and style are not supported on nim-0.20.X_
+- _color, style, and prefix are unsupported on nim-0.20.X_
 
 ```
 --define:cutelogEmojis       # turn on emojis
