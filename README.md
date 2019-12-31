@@ -1,4 +1,4 @@
-# cutelog
+# cutelog [![Build Status](https://travis-ci.org/disruptek/cutelog.svg?branch=master)](https://travis-ci.org/disruptek/cutelog)
 
 A stylish little logger to replace `echo` in command-line apps.
 

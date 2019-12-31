@@ -17,7 +17,7 @@ type
     fg: ForegroundColor
     bg: BackgroundColor
 
-proc emojiPrefix(level: Level): string {.used, raises: [].} =
+func emojiPrefix(level: Level): string {.used.} =
   case level:
   of lvlFatal:   # use this level for our most critical outputs
     result = ""  # and don't prefix them with a glyph
@@ -121,7 +121,7 @@ proc newCuteConsoleLogger*(levelThreshold = lvlAll; fmtStr = "";
   when defined(cutelogEmojis):
     prefixer = emojiPrefix
   else:
-    prefixer = proc (level: Level): string = ""
+    prefixer = func (level: Level): string = ""
   result = newCuteConsoleLogger(levelThreshold = levelThreshold, fmtStr = fmtStr,
                                 prefixer = prefixer, painter = painter,
                                 useStderr = useStderr)
