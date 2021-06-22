@@ -99,6 +99,11 @@ when NimMajor != 0 or NimMinor != 20:
       arguments: seq[string]
     for a in args:
       arguments.add a
+    var ln: string
+    try:
+      ln = substituteLog(logger.fmtStr, level, arguments)
+    except OsError:  # really...
+      ln = arguments.join " "
     try:
       if stdmsg.isatty:
         stdmsg.resetAttributes
@@ -108,7 +113,7 @@ when NimMajor != 0 or NimMinor != 20:
                                   bright = false)
         stdmsg.setStyle(palette.style)
       # separate logging arguments with spaces for convenience
-      stdmsg.writeLine(prefix & arguments.join(" "))
+      stdmsg.writeLine(prefix & ln)
       if stdmsg.isatty:
         stdmsg.resetAttributes
     except:
