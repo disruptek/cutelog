@@ -14,17 +14,10 @@ type
     fg: ForegroundColor
     bg: BackgroundColor
 
-when NimMajor == 0 and NimMinor < 20:
-  type
-    CuteConsoleLogger* = ref object of ConsoleLogger
-      prefixer: CuteLoggerPrefixer
-      painter: CuteLoggerPainter
-      useStderr: bool
-else:
-  type
-    CuteConsoleLogger* = ref object of ConsoleLogger
-      prefixer: CuteLoggerPrefixer
-      painter: CuteLoggerPainter
+type
+  CuteConsoleLogger* = ref object of ConsoleLogger
+    prefixer: CuteLoggerPrefixer
+    painter: CuteLoggerPainter
 
 func emojiPrefix(level: Level): string {.used.} =
   case level:
@@ -48,7 +41,7 @@ method log*(logger: CuteLogger; level: Level; args: varargs[string, `$`])
   ## anything that isn't fatal gets a cute emoji
   var
     arguments: seq[string]
-  for a in args:
+  for a in args.items:
     arguments.add a
   when defined(cutelogEmojis):
     let prefix = level.emojiPrefix
@@ -87,50 +80,36 @@ proc painter*(level: Level): CutePalette =
   when defined(cutelogBland):
     result.style = {}
 
-when NimMajor != 0 or NimMinor != 20:
-  method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
-    {.locks: "unknown", raises: [].} =
-    ## use color and a prefix func to log
-    let
-      prefix = logger.prefixer(level)
-      palette = logger.painter(level)
+method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
+  {.locks: "unknown", raises: [].} =
+  ## use color and a prefix func to log
+  let
+    prefix = logger.prefixer(level)
+    palette = logger.painter(level)
 
-    var
-      arguments: seq[string]
-    for a in args:
-      arguments.add a
-    var ln: string
-    try:
-      ln = substituteLog(logger.fmtStr, level, arguments)
-    except OsError:  # really...
-      ln = arguments.join " "
-    try:
-      if stdmsg.isatty:
-        stdmsg.resetAttributes
-        stdmsg.setForegroundColor(palette.fg,
-                                  bright = styleBright in palette.style)
-        stdmsg.setBackgroundColor(palette.bg,
-                                  bright = false)
-        stdmsg.setStyle(palette.style)
-      # separate logging arguments with spaces for convenience
-      stdmsg.writeLine(prefix & ln)
-      if stdmsg.isatty:
-        stdmsg.resetAttributes
-    except:
-      discard
-else:
-  method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
-    {.locks: "unknown", raises: [].} =
-    ## use a prefix func to log
-    var
-      arguments: seq[string]
-    for a in args:
-      arguments.add a
-    try:
-      # separate logging arguments with spaces for convenience
-      stdmsg.writeLine(arguments.join(" "))
-    except:
-      discard
+  var
+    arguments: seq[string]
+  for a in args:
+    arguments.add a
+  var ln: string
+  try:
+    ln = substituteLog(logger.fmtStr, level, arguments)
+  except OsError:  # really...
+    ln = arguments.join " "
+  try:
+    if stdmsg.isatty:
+      stdmsg.resetAttributes
+      stdmsg.setForegroundColor(palette.fg,
+                                bright = styleBright in palette.style)
+      stdmsg.setBackgroundColor(palette.bg,
+                                bright = false)
+      stdmsg.setStyle(palette.style)
+    # separate logging arguments with spaces for convenience
+    stdmsg.writeLine(prefix & ln)
+    if stdmsg.isatty:
+      stdmsg.resetAttributes
+  except:
+    discard
 
 proc newCuteLogger*(console: ConsoleLogger): CuteLogger =
   ## create a new logger instance which forwards to the given console logger
