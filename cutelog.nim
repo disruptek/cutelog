@@ -81,7 +81,7 @@ proc painter*(level: Level): CutePalette =
     result.style = {}
 
 method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
-  {.locks: "unknown", raises: [].} =
+  {.locks: "unknown".} =
   ## use color and a prefix func to log
   let
     prefix = logger.prefixer(level)
