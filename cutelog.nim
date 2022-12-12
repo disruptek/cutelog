@@ -80,6 +80,19 @@ proc painter*(level: Level): CutePalette =
   when defined(cutelogBland):
     result.style = {}
 
+# use a lock to avoid thread contention on tty/stderr
+when compileOption"threads" and not defined(cutelogNoLock):
+  import std/rlocks
+  var clobber {.global.}: RLock
+  initRLock clobber
+
+  template noclobber*(body: untyped) =
+    ## serialize access to the body; usually for output reasons
+    withRLock clobber:
+      body
+else:
+  template noclobber*(body: untyped) = body
+
 method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
   {.locks: "unknown".} =
   ## use color and a prefix func to log
@@ -97,17 +110,23 @@ method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
   except OsError:  # really...
     ln = arguments.join " "
   try:
-    if stdmsg.isatty:
-      stdmsg.resetAttributes
-      stdmsg.setForegroundColor(palette.fg,
-                                bright = styleBright in palette.style)
-      stdmsg.setBackgroundColor(palette.bg,
-                                bright = false)
-      stdmsg.setStyle(palette.style)
-    # separate logging arguments with spaces for convenience
-    stdmsg.writeLine(prefix & ln)
-    if stdmsg.isatty:
-      stdmsg.resetAttributes
+    template ttyWrap(logic: untyped): untyped {.dirty.} =
+      ## setting/resetting terminal styling as necessary
+      noclobber:  # use the lock around output
+        if stdmsg.isatty:
+          stdmsg.resetAttributes
+          stdmsg.setForegroundColor(palette.fg,
+                                    bright = styleBright in palette.style)
+          stdmsg.setBackgroundColor(palette.bg,
+                                    bright = false)
+          stdmsg.setStyle(palette.style)
+          logic
+          stdmsg.resetAttributes()
+        else:
+          logic
+    ttyWrap:
+      # separate logging arguments with spaces for convenience
+      stdmsg.writeLine(prefix & ln)
   except:
     discard
 
