@@ -36,8 +36,7 @@ func emojiPrefix(level: Level): string {.used.} =
   of lvlAll, lvlNone:
     discard
 
-method log*(logger: CuteLogger; level: Level; args: varargs[string, `$`])
-  {.locks: "unknown", raises: [].} =
+method log*(logger: CuteLogger; level: Level; args: varargs[string, `$`]) =
   ## anything that isn't fatal gets a cute emoji
   var
     arguments: seq[string]
@@ -47,11 +46,8 @@ method log*(logger: CuteLogger; level: Level; args: varargs[string, `$`])
     let prefix = level.emojiPrefix
   else:
     const prefix = ""
-  try:
-    # separate logging arguments with spaces for convenience
-    logger.forward.log(level, prefix & arguments.join(" "))
-  except:
-    discard
+  # separate logging arguments with spaces for convenience
+  logger.forward.log(level, prefix & arguments.join(" "))
 
 proc painter*(level: Level): CutePalette =
   result = (style: {}, fg: fgDefault, bg: bgDefault)
@@ -93,8 +89,7 @@ when compileOption"threads" and not defined(cutelogNoLock):
 else:
   template noclobber*(body: untyped) = body
 
-method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
-  {.locks: "unknown".} =
+method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`]) =
   ## use color and a prefix func to log
   let
     prefix = logger.prefixer(level)
@@ -109,26 +104,25 @@ method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
     ln = substituteLog(logger.fmtStr, level, arguments)
   except OsError:  # really...
     ln = arguments.join " "
-  try:
-    template ttyWrap(logic: untyped): untyped {.dirty.} =
-      ## setting/resetting terminal styling as necessary
-      noclobber:  # use the lock around output
-        if stdmsg.isatty:
-          stdmsg.resetAttributes
-          stdmsg.setForegroundColor(palette.fg,
-                                    bright = styleBright in palette.style)
-          stdmsg.setBackgroundColor(palette.bg,
-                                    bright = false)
-          stdmsg.setStyle(palette.style)
-          logic
-          stdmsg.resetAttributes()
-        else:
-          logic
-    ttyWrap:
-      # separate logging arguments with spaces for convenience
-      stdmsg.writeLine(prefix & ln)
-  except:
-    discard
+
+  template ttyWrap(logic: untyped): untyped {.dirty.} =
+    ## setting/resetting terminal styling as necessary
+    noclobber:  # use the lock around output
+      if stdmsg.isatty:
+        stdmsg.resetAttributes
+        stdmsg.setForegroundColor(palette.fg,
+                                  bright = styleBright in palette.style)
+        stdmsg.setBackgroundColor(palette.bg,
+                                  bright = false)
+        stdmsg.setStyle(palette.style)
+        logic
+        stdmsg.resetAttributes()
+      else:
+        logic
+
+  ttyWrap:
+    # separate logging arguments with spaces for convenience
+    stdmsg.writeLine(prefix & ln)
 
 proc newCuteLogger*(console: ConsoleLogger): CuteLogger =
   ## create a new logger instance which forwards to the given console logger
