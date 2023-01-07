@@ -1,4 +1,4 @@
-version = "3.0.0"
+version = "3.0.1"
 author = "disruptek"
 description = "cute logging"
 license = "MIT"

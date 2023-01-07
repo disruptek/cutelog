@@ -95,6 +95,12 @@ method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
     prefix = logger.prefixer(level)
     palette = logger.painter(level)
 
+  template output: untyped =
+    if logger.useStderr:
+      stderr
+    else:
+      stdmsg()
+
   var
     arguments: seq[string]
   for a in args:
@@ -108,21 +114,21 @@ method log*(logger: CuteConsoleLogger; level: Level; args: varargs[string, `$`])
   template ttyWrap(logic: untyped): untyped {.dirty.} =
     ## setting/resetting terminal styling as necessary
     noclobber:  # use the lock around output
-      if stdmsg.isatty:
-        stdmsg.resetAttributes
-        stdmsg.setForegroundColor(palette.fg,
+      if output.isatty:
+        output.resetAttributes
+        output.setForegroundColor(palette.fg,
                                   bright = styleBright in palette.style)
-        stdmsg.setBackgroundColor(palette.bg,
+        output.setBackgroundColor(palette.bg,
                                   bright = false)
-        stdmsg.setStyle(palette.style)
+        output.setStyle(palette.style)
         logic
-        stdmsg.resetAttributes()
+        output.resetAttributes()
       else:
         logic
 
   ttyWrap:
     # separate logging arguments with spaces for convenience
-    stdmsg.writeLine(prefix & ln)
+    output.writeLine(prefix & ln)
 
 proc newCuteLogger*(console: ConsoleLogger): CuteLogger =
   ## create a new logger instance which forwards to the given console logger
